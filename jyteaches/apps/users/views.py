@@ -1,6 +1,5 @@
 from django.shortcuts import render
 from django.http import  HttpResponse,HttpResponseRedirect
-
 from django.contrib.auth import authenticate,login,logout
 from django.contrib.auth.backends import ModelBackend
 from .models import UserProfile,EmailVertifyRecord,Banner
@@ -8,10 +7,15 @@ from django.db.models import Q
 from django.views.generic import View
 from .forms import Login_Form,Register_Form,ForgetPwd_Form,ResetPwd_Form,UserInfo_Form
 from django.contrib.auth.hashers import make_password
-from utils.send_mail import register_send_mail
 from django.http import HttpResponse
-from organizations.models import CourseOrg
+from organizations.models import CourseOrg,Teacher
 from courses.models import Course
+import json
+from .forms import UploadImageForm
+from utils.send_mail import register_send_mail
+from operations.models import UserCourse,UserFav,UserMessage
+from pure_pagination import Paginator, PageNotAnInteger   #分页
+
 # Create your views here.
 
 
@@ -165,9 +169,175 @@ class index_view(View):
 
 class UserCenterInfoView(View):
     def get(self,request):
-        return render(request,'usercenter-info.html')
+        user = request.user
+        content = 'info'
+        return render(request,'usercenter-info.html',{
+            'user':user,
+            'content': content,
+        })
     def post(self,request):
-        user_info_form = UserInfo_Form(request.POST)
+        user_info_form = UserInfo_Form(request.POST,instance=request.user)
         if user_info_form.is_valid():
             user_info_form.save()
             return HttpResponse('{"status": "success", "msg":"修改成功"}', content_type="application/json")
+        else:
+            # message = '{"status": "failure"}'
+            return HttpResponse( json.dumps(user_info_form.errors),content_type="application/json")
+
+class UploadImageView(View):
+    """
+     用户修改头像
+     """
+    def post(self, request):
+        image_form = UploadImageForm(request.POST, request.FILES, instance=request.user)
+        if image_form.is_valid():
+            userprofile = UserProfile()
+            userprofile.image = request.FILES
+            userprofile.save()
+            return HttpResponse('{"status": "success", "msg":"修改成功"}', content_type="application/json")
+        else:
+            return HttpResponse('{"status": "fail", "msg":"修改失败"}', content_type="application/json")
+
+class UpdatePwdView(View):
+    """
+    个人中心密码修改
+    """
+    def post(self,request):
+        modify_form = ResetPwd_Form(request.POST)
+        if modify_form.is_valid():
+            pwd1 = request.POST.get("password1", "")
+            pwd2 = request.POST.get("password2", "")
+            if pwd1 != pwd2:
+                return HttpResponse('{"status": "fail", "msg":"修改失败"}', content_type="application/json")
+            user = request.user
+            user.password = make_password(pwd2)
+            user.save()
+            return HttpResponse('{"status": "success", "msg":"修改成功"}', content_type="application/json")
+        else:
+            return HttpResponse('{"msg":"密码不能少于6位"}',content_type="application/json")
+
+
+class SendEamilCodeView(View):
+    """
+    发送邮箱验证码
+    """
+    def get(self, request):
+        email = request.GET.get("email", "")
+        if UserProfile.objects.filter(email=email):
+            return HttpResponse('{"email": "邮箱已存在"}', content_type="application/json")
+        register_send_mail(email, "update_email")
+        return HttpResponse('{"status": "success", "msg":"修改成功"}', content_type="application/json")
+
+class UpdateEmailView( View):
+    """
+        修改个人邮箱
+        """
+    def post(self, request):
+        email = request.POST.get("email", "")
+        code = request.POST.get("code", "")
+
+        existed_codes = EmailVertifyRecord.objects.filter(email=email, code=code, send_type="update_email")
+        if existed_codes:
+            user = request.user
+            user.email = email
+            user.save()
+            return HttpResponse('{"status": "success", "msg":"修改成功"}', content_type="application/json")
+        else:
+            return HttpResponse('{"email": "验证码出错"}', content_type="application/json")
+
+
+class MyCourseView(View):
+    """
+    我的课程
+    """
+    def get(self, request):
+        content = 'course'
+        user_courses = UserCourse.objects.filter(user_id=request.user.id)
+        try:
+            page = request.GET.get('page', 1)
+        except PageNotAnInteger:
+            page = 1
+        p = Paginator(user_courses,3, request=request)
+        # 这里需要些一页显示几个
+        user_courses = p.page(page)
+        return render(request, "usercenter-mycourse.html", {
+            "user_courses": user_courses,
+            'content': content,
+        })
+
+
+class MyFavOrgView(View):
+    """
+    我收藏的课程机构
+    """
+    def get(self, request):
+        org_list = []
+        content = 'org'
+        myfav = 'org'
+        fav_orgs = UserFav.objects.filter(user=request.user, fav_type=2)
+        for fav_org in fav_orgs:
+            org_id = fav_org.fav_id
+            org = CourseOrg.objects.get(id=org_id)
+            org_list.append(org)
+        return render(request, "usercenter-fav-org.html", {
+            "org_list": org_list,
+            'myfav': myfav,
+            'content': content,
+        })
+
+
+class MyFavTeacherView(View):
+    """
+    我收藏的授课讲师
+    """
+    def get(self, request):
+        teacher_list = []
+        content = 'org'
+        myfav = 'teacher'
+        fav_teachers = UserFav.objects.filter(user=request.user, fav_type=3)
+        for fav_teacher in fav_teachers:
+            teacher_id = fav_teacher.fav_id
+            teacher = Teacher.objects.get(id=teacher_id)
+            teacher_list.append(teacher)
+        return render(request, "usercenter-fav-teacher.html", {
+            "teacher_list": teacher_list,
+            'myfav': myfav,
+            'content': content,
+        })
+
+
+class MyFavCourseView(View):
+    """
+    我收藏的课程
+    """
+    def get(self, request):
+        course_list = []
+        content = 'org'
+        myfav = 'course'
+        fav_courses = UserFav.objects.filter(user=request.user, fav_type=1)
+        for fav_course in fav_courses:
+            course_id = fav_course.fav_id
+            course = Course.objects.get(id=course_id)
+            course_list.append(course)
+        return render(request, "usercenter-fav-course.html", {
+            "course_list": course_list,
+            'myfav':myfav,
+            'content':content,
+        })
+
+class MyMessageView(View):
+    """
+    我的消息
+    """
+    def get(self, request):
+        content = 'message'
+        all_messages = UserMessage.objects.filter(user=request.user.id)
+        all_unread_message = UserMessage.objects.filter(user=request.user.id,has_read=False)
+        for unread_message in all_unread_message:
+            unread_message.has_read = True
+            unread_message.save()
+
+        return render(request, "usercenter-message.html", {
+            "all_messages":all_messages,
+            'content':content,
+        })

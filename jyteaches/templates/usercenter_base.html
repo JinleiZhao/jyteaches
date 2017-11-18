@@ -85,11 +85,11 @@
 	<div class="wp list personal_list">
 	<div class="left">
         <ul>
-            <li class="active2"><a href="usercenter-info.html">个人资料</a></li>
-            <li ><a href="usercenter-mycourse.html">我的课程</a></li>
-            <li ><a href="usercenter-fav-course.html">我的收藏</a></li>
-            <li >
-                <a href="usercenter-message.html" style="position: relative;">
+            <li {% ifequal content 'info' %}class="active2"{% endifequal %}><a href="{% url 'user_info' %}">个人资料</a></li>
+            <li {% ifequal content 'course' %}class="active2"{% endifequal %}><a href="{% url 'my_course' %}">我的课程</a></li>
+            <li {% ifequal content 'org' %}class="active2"{% endifequal %}><a href="{% url 'myfav_org' %}">我的收藏</a></li>
+            <li {% ifequal content 'message' %}class="active2"{% endifequal %}>
+                <a href="{% url 'my_message' %}" style="position: relative;">
                     我的消息
                 </a>
             </li>

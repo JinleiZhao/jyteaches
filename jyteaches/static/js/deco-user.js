@@ -12,7 +12,7 @@ function sendCodeChangeEmail($btn){
         cache: false,
         type: "get",
         dataType:'json',
-        url:"/users/sendemail_code/",
+        url:"/sendemail_code/",
         data:$('#jsChangeEmailForm').serialize(),
         async: true,
         beforeSend:function(XMLHttpRequest){
@@ -50,7 +50,7 @@ var verify = verifyDialogSubmit(
         cache: false,
         type: 'post',
         dataType:'json',
-        url:"/users/update_email/ ",
+        url:"/update_email/ ",
         data:$('#jsChangeEmailForm').serialize(),
         async: true,
         beforeSend:function(XMLHttpRequest){
@@ -86,7 +86,7 @@ $(function(){
             cache: false,
             type: "POST",
             dataType:'json',
-            url:"/users/update/pwd/",
+            url:"/update_pwd/",
             data:$('#jsResetPwdForm').serialize(),
             async: true,
             success: function(data) {
@@ -147,7 +147,7 @@ $(function(){
     //保存个人资料
     $('#jsEditUserBtn').on('click', function(){
         var _self = $(this),
-            $jsEditUserForm = $('#jsEditUserForm')
+            $jsEditUserForm = $('#jsEditUserForm');
             verify = verifySubmit(
             [
                 {id: '#nick_name', tips: Dml.Msg.epNickName, require: true}
@@ -160,7 +160,7 @@ $(function(){
             cache: false,
             type: 'post',
             dataType:'json',
-            url:"/users/info/",
+            url:"/user_info/",
             data:$jsEditUserForm.serialize(),
             async: true,
             beforeSend:function(XMLHttpRequest){
@@ -168,13 +168,16 @@ $(function(){
                 _self.attr('disabled',true);
             },
             success: function(data) {
-                if(data.nick_name){
-                    _showValidateError($('#nick_name'), data.nick_name);
-                }else if(data.birday){
-                   _showValidateError($('#birth_day'), data.birday);
+                if(data.nike_name){
+                    _showValidateError($('#nick_name'), data.nike_name);
+                }else if(data.birthday){
+                   _showValidateError($('#birth_day'), data.birthday);
                 }else if(data.address){
                    _showValidateError($('#address'), data.address);
-                }else if(data.status == "failure"){
+                }else if(data.mobile){
+                   _showValidateError($('#mobile'), data.mobile);
+                }
+                else if(data.status == "failure"){
                      Dml.fun.showTipsDialog({
                         title: '保存失败',
                         h2: data.msg

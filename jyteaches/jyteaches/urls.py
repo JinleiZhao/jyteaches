@@ -17,10 +17,12 @@ from django.conf.urls import url,include
 from django.contrib import admin
 import xadmin
 from django.views.generic import  TemplateView
-from users.views import user_login,user_register,user_active,forget_pwd,user_reset,user_reset_post,user_logout,index_view,UserCenterInfoView
+from users.views import user_login,user_register,user_active,forget_pwd,user_reset,user_reset_post,user_logout,index_view,UserCenterInfoView,UploadImageView,UpdatePwdView
+from users.views import SendEamilCodeView,UpdateEmailView,MyCourseView,MyFavOrgView,MyFavTeacherView,MyFavCourseView,MyMessageView
 from jyteaches.settings import MEDIA_ROOT,MEDIA_URL,STATIC_ROOT  #
 from django.conf.urls.static import static            #引入media及static
 from django.views.static import serve
+
 from django.conf import settings
 
 
@@ -40,6 +42,15 @@ urlpatterns = [
                                             #命名空间（在页面中能用org：xxx）
     url(r'^course/',include('courses.urls',namespace='course')),
     url(r'^user_info/$',UserCenterInfoView.as_view(),name='user_info'),
+    url(r'upload_image/$',UploadImageView.as_view(),name='upload_image'),
+    url(r'update_pwd/$',UpdatePwdView.as_view(),name='update_pwd'),
+    url(r'sendemail_code/$',SendEamilCodeView.as_view(),name='sendemail_code'),
+    url(r'update_email/$',UpdateEmailView.as_view(),name='update_email'),
+    url(r'my_course/$',MyCourseView.as_view(),name='my_course'),
+    url('myfav_org/$',MyFavOrgView.as_view(),name='myfav_org'),
+    url('myfav_teacher/$',MyFavTeacherView.as_view(), name='myfav_teacher'),
+    url('myfav_course/$',MyFavCourseView.as_view(), name='myfav_course'),
+    url(r'my_message/$',MyMessageView.as_view(),name='my_message'),
 
     url(r'^static/(?P<path>.*)$', serve, {'document_root':STATIC_ROOT}, name='static'),
     url(r'^media/(?P<path>.*)$', serve, {'document_root':MEDIA_ROOT}, name='media'),

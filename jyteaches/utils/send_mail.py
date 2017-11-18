@@ -37,3 +37,10 @@ def register_send_mail(email,send_type='register'):
             pass
         else:
             return HttpResponse('糟糕短信发送失败')
+
+    if send_type == "update_email":
+        email_title = "邮箱修改验证码"
+        email_body = "你的邮箱验证码为：{0}".format(code)
+        send_status = send_mail(email_title, email_body, EMAIL_FROM, [email])
+        if send_status:
+            pass
